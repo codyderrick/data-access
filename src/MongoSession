@@ -1,0 +1,53 @@
+using System.Linq;
+using MongoDB.Driver;
+using MongoDB.Driver.Builders;
+using MongoDB.Driver.Linq;
+
+namespace DataAccess.Data
+{
+    public class MongoSession : IDatabaseSession
+    {
+        private readonly MongoDatabase _db;
+
+        public MongoSession(IConfigurationManager configurationManager)
+        {
+            var connectionString = configurationManager.GetSetting<string>("MONGOHQ_URL"); //configurationManager.ConnectionStrings("ConnectionString");
+
+            var url = new MongoUrl(connectionString);
+            var settings = MongoClientSettings.FromUrl(url);
+            var client = new MongoClient(settings);
+            _db = client.GetServer().GetDatabase(url.DatabaseName);
+        }
+
+        public void Save<T>(T entity)
+        {
+            var collection = GetCollection<T>();
+            collection.Save(entity);
+        }
+
+        public void Delete<T>(T entity) where T : BaseDocument
+        {
+            var query = Query.EQ("_id", entity.Id);
+            var collection = GetCollection<T>();
+            collection.Remove(query);
+        }
+
+        public IQueryable<T> Queryable<T>()
+        {
+            var collectionName = GetCollectionName<T>();
+            return _db.GetCollection(collectionName).AsQueryable<T>();
+        }
+
+        private MongoCollection<T> GetCollection<T>()
+        {
+            var collectionName = GetCollectionName<T>();
+            return _db.GetCollection<T>(collectionName);
+        }
+
+        private static string GetCollectionName<T>()
+        {
+            var collectionName = typeof(T).Name.Pluralize();
+            return collectionName;
+        }
+    }
+}
