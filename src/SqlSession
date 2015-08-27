@@ -1,0 +1,41 @@
+using System.Collections.Generic;
+using System.Linq;
+using Simple.Data;
+
+namespace DataAccess.Data
+{
+    public class SqlSession : IDatabaseSession
+    {
+        private readonly Database _db;
+
+        public SqlSession()
+        {
+            _db = Database.OpenNamedConnection("ConnectionString");
+        }
+
+        public void Save<T>(T entity) where T : BaseDocument
+        {
+            var collectionName = GetCollectionName<T>();
+            var savedEntity = _db[collectionName].Upsert(entity);
+        }
+
+        public void Delete<T>(T entity) where T : BaseDocument
+        {
+            var collectionName = GetCollectionName<T>();
+            _db[collectionName].DeleteById(entity.Id);
+        }
+
+        public IQueryable<T> Queryable<T>()
+        {
+            var collectionName = GetCollectionName<T>();
+            IEnumerable<T> cast = _db[collectionName].All().Cast<T>();
+            return cast.AsQueryable();
+        }
+
+        private static string GetCollectionName<T>()
+        {
+            var collectionName = typeof(T).Name.Pluralize();
+            return collectionName;
+        }
+    }
+}
