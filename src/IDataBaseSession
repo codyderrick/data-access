@@ -1,6 +1,6 @@
 using System.Linq;
 
-namespace myfavoritetoothbrush.web.ui.Data
+namespace DataAccess.Data
 {
     public interface IDatabaseSession
     {
